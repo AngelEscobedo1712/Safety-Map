@@ -16,7 +16,7 @@ data = data[boolean_mask].reset_index(drop=True)
 
 #columns to drop
 columns_to_drop = ['idCarpeta', 'Año_inicio', 'Mes_inicio', 'FechaInicio',
-                   'CalidadJuridica', 'Mes_hecho',  'HoraInicio',
+                   'CalidadJuridica', 'HoraInicio',
                   'fgj_colonia_registro', 'municipio_hechos']
 
 data = data.drop(columns_to_drop, axis=1)
