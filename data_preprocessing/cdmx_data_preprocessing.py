@@ -37,10 +37,8 @@ data['Edad'] = np.where(data['Edad'] > 100, np.nan, data['Edad'])
 data['Edad'] = np.where(data['Edad'].isna(), data["Edad"].mean(), data['Edad'])
 
 
-# Create Unknown gender category
-data['Sexo'] = np.where(data['Sexo'].isna(), "Unknown", data['Sexo'])
-
-# Very few gender unknowns, would drop
+# Remove rows with missing gender
+data = data[data["Sexo"].notna()]
 
 
 # Assign missing latitude and longitude, set wrong longitudes to 0
