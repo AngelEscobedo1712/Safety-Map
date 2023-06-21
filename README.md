@@ -9,4 +9,4 @@ URL = https://storage.googleapis.com/safetymap/data_new_cats.csv
 URL = https://storage.googleapis.com/safetymap/colonia_id_dict.json
 
 # Preprocessed data, stored in a public available GCP bucket
-URL = https://storage.googleapis.com/safetymap/preprocessed_data.csv
+URL = https://storage.googleapis.com/safetymap/preprocessed_data2.csv
