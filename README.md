@@ -4,3 +4,9 @@ URL = https://datos.cdmx.gob.mx/dataset/victimas-en-carpetas-de-investigacion-fg
 
 # Cleaned data (NOT PROCESSED) stored in a public available GCP bucket
 URL = https://storage.googleapis.com/safetymap/data_new_cats.csv
+
+# Dictionary with neighborhoods and corresponding IDs, stored in a public available GCP bucket
+URL = https://storage.googleapis.com/safetymap/colonia_id_dict.json
+
+# Preprocessed data, stored in a public available GCP bucket
+URL = https://storage.googleapis.com/safetymap/preprocessed_data.csv
