@@ -17,7 +17,8 @@ data = data[boolean_mask].reset_index(drop=True)
 #columns to drop
 columns_to_drop = ['idCarpeta', 'Año_inicio', 'Mes_inicio', 'FechaInicio',
                    'CalidadJuridica', 'HoraInicio',
-                  'fgj_colonia_registro', 'municipio_hechos']
+                  'fgj_colonia_registro', 'municipio_hechos',
+                  'TipoPersona', 'competencia']
 
 data = data.drop(columns_to_drop, axis=1)
 
@@ -47,3 +48,25 @@ data['latitud'] = np.where(data['latitud'].isna(), 0, data['latitud'])
 data['longitud'] = np.where(data['longitud'].isna(), 0, data['longitud'])
 
 data['longitud'] = np.where(data['longitud'] == data["latitud"], 0, data['longitud'])
+
+
+#dataset to clasify according to new defined categories
+new_cats = pd.read_csv('/Users/pieterdietrich/code/eldiepi/safety_map/data/new_categories4.csv')
+
+#renaming of the columns
+new_cats.rename(columns={"Unnamed: 0": "Delito", "Unnamed: 1": "new_cats"},inplace=True)
+
+data_new_cats = pd.merge(data, new_cats,how='left', on='Delito')
+
+#droping the raws with 'ignore' category
+boolean_mask = data_new_cats['new_cats'] != 'ignore'
+data_new_cats = data_new_cats[boolean_mask].reset_index(drop=True)
+
+#Drop old Category and delict columns
+data_new_cats.drop(columns=['Categoria', 'Delito'], axis=1, inplace=True)
+
+
+data_new_cats.rename(columns={"new_cats": "Categoria"},inplace=True)
+
+print('finish')
+print(data_new_cats)
