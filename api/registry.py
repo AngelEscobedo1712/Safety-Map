@@ -3,7 +3,7 @@ import os
 import time
 import pickle
 
-# from colorama import Fore, Style
+from colorama import Fore, Style
 from tensorflow import keras
 from google.cloud import storage
 
@@ -33,3 +33,29 @@ def save_model(model: keras.Model = None) -> None:
     print("✅ Model saved to GCS")
 
     return None
+
+def load_model() -> keras.Model:
+    """
+    Return a saved model:
+    - from GCS (most recent one)
+    Return None (but do not Raise) if no model is found
+    """
+    print(Fore.BLUE + f"\nLoad latest model from GCS..." + Style.RESET_ALL)
+
+    client = storage.Client()
+    blobs = list(client.get_bucket(BUCKET_NAME).list_blobs(prefix="model"))
+
+    try:
+        latest_blob = max(blobs, key=lambda x: x.updated)
+        latest_model_path_to_save = os.path.join(LOCAL_REGISTRY_PATH, latest_blob.name)
+        latest_blob.download_to_filename(latest_model_path_to_save)
+
+        latest_model = keras.models.load_model(latest_model_path_to_save)
+
+        print("✅ Latest model downloaded from cloud storage")
+
+        return latest_model
+    except:
+        print(f"\n❌ No model found in GCS bucket {BUCKET_NAME}")
+
+        return None
