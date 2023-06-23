@@ -11,9 +11,10 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 import numpy as np
 
-
 import matplotlib.pyplot as plt
 from typing import Tuple
+from registry import load_data_to_bq
+from params import GCP_PROJECT, BQ_DATASET, BQ_DATASET_PREDICTION
 
 pd.set_option('display.max_columns', 500)
 
@@ -177,6 +178,12 @@ predictions = model.predict(X_test)
 
 prediction_dataframe = make_the_dataframe(predictions)
 
+load_data_to_bq(prediction_dataframe,
+                GCP_PROJECT,
+                BQ_DATASET,
+                BQ_DATASET_PREDICTION,
+                truncate= True
+)
 print("We are Ready!, try with these predictions")
 
 # Save the model
