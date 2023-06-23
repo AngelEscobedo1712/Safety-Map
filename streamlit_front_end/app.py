@@ -38,7 +38,7 @@ st.markdown("""
 
 st.title("Historical crime data")
 
-map =folium.Map(location=[19.4326, -99.1332], zoom_start=11, tiles= 'Stamen Toner')
+map = folium.Map(location=[19.4326, -99.1332], zoom_start=11, tiles='Stamen Toner')
 
 ##select colonia (names queried from Big Query)
 query = f"SELECT DISTINCT {column_name} FROM `{project_id}.{dataset_id}.{table_id}`"
@@ -48,18 +48,15 @@ rows = query_job.result()
 # Extract the column values into a Python list
 colonias = [row[column_name] for row in rows]
 
-
 ###add drop downs
 dropdown_values = {
-    'year_column': [2019, 2020, 2021, 2022, 2023],
-    'month_column': list(range(1, 13)),
-    'alcaldia_colonia': colonias,
-    'Categoria': ['fraud', 'threats', 'threats', 'burglary', 'homicide',
-    'sexual crime', 'property damage', 'domestic violence', 'danger of well-being',
-    'robbery with violence', 'robbery without violence']
+    'year_column': ['ALL', 2019, 2020, 2021, 2022, 2023],  # Add 'ALL' as the first option
+    'month_column': ['ALL'] + list(range(1, 13)),  # Add 'ALL' as the first option
+    'alcaldia_colonia': ['ALL'] + colonias,  # Add 'ALL' as the first option
+    'Categoria': ['ALL', 'fraud', 'threats', 'threats', 'burglary', 'homicide',
+                  'sexual crime', 'property damage', 'domestic violence', 'danger of well-being',
+                  'robbery with violence', 'robbery without violence']
 }
-
-
 
 # Collect selected values from the dropdown menus
 selected_values = {}
@@ -67,17 +64,20 @@ for dropdown_label, dropdown_options in dropdown_values.items():
     selected_values[dropdown_label] = st.selectbox(dropdown_label, dropdown_options)
 
 # Fetch the relevant data from BigQuery based on the selected values
-where_conditions = []
+where_clauses = []
 for dropdown_label, selected_value in selected_values.items():
-    if isinstance(selected_value, str):
-        where_conditions.append(f"{dropdown_label} = '{selected_value}'")
-    else:
-        where_conditions.append(f"{dropdown_label} = {selected_value}")
+    if selected_value != 'ALL':
+        if isinstance(selected_value, str):
+            where_clauses.append(f"{dropdown_label} = '{selected_value}'")
+        else:
+            where_clauses.append(f"{dropdown_label} = {selected_value}")
 
+if where_clauses:
+    where_clause = " AND ".join(where_clauses)
+else:
+    where_clause = "1 = 1"  # Condition to select all values
 
-where_clause = " AND ".join(where_conditions)
-
-# Prepare the parameterized query
+# Prepare the query
 query = f"""
     SELECT latitud, longitud
     FROM `{dataset_id}.{table_id}`
@@ -86,15 +86,8 @@ query = f"""
 
 st.write(query)
 
-# Set query parameters with converted values
-query_parameters = [bigquery.ScalarQueryParameter(f"value{i}", "STRING", str(value)) for i, value in enumerate(selected_values.values())]
-
-# Run the query with parameterized values
-job_config = bigquery.QueryJobConfig()
-job_config.query_parameters = query_parameters
-query_job = client.query(query, job_config=job_config)
-
-
+# Run the query
+query_job = client.query(query)
 dataframe = query_job.to_dataframe()
 
 dataframe_shape = dataframe.shape
@@ -115,8 +108,7 @@ if dataframe_shape[0] > 0:
     for _, row in dataframe.iterrows():
         folium.Marker([row['latitud'], row['longitud']]).add_to(map)
 else:
-    #folium.Marker(map_center[::-1], popup='No crime was committed.').add_to(map)
-    st.markdown(""" # NO CRIME WAS COMMITED """)
+    st.markdown(""" ##NO CRIME WAS COMMITTED """)
 
 # Display the map
 st_folium(map, width=700)
