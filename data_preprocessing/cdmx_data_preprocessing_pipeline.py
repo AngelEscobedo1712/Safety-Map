@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import json
 
 
 def download_data():
@@ -52,6 +53,18 @@ codes, uniques = pd.factorize(columns_colonias_date_complete_df['Neighborhood'].
 
 codes += 1
 colonia_id_dict = dict(zip(uniques, codes))
+
+#export dict to json
+data = {key: int(value) if isinstance(value, np.int64) else value for key, value in colonia_id_dict.items()}
+
+
+file_path = "/Users/pieterdietrich/code/AngelEscobedo1712/Safety-Map/Clean and Preprocessed Data/neighborhood_id.json"
+
+# Open the file in write mode and write the JSON data
+with open(file_path, "w") as json_file:
+    json.dump(data, json_file)
+
+print("JSON data exported successfully.")
 
 #Convert floats to integer
 
