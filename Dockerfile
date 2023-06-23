@@ -10,4 +10,6 @@ COPY setup.py /setup.py
 
 RUN pip install .
 
-CMD uvicorn Safety-Map.api.fastapi.fast:app --host 0.0.0.0 --port $PORT
+COPY wagon-bootcamp-385417-bfee5f083d98.json /wagon-bootcamp-385417-bfee5f083d98.json
+
+CMD uvicorn api.fastapi.fast:app --host 0.0.0.0 --port $PORT

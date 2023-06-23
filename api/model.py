@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from pathlib import Path
+import json
 # from colorama import Fore, Style
 
 from registry import save_model
@@ -26,13 +27,12 @@ from tensorflow.keras import optimizers, metrics
 from tensorflow.keras.regularizers import L1L2
 from tensorflow.keras.callbacks import EarlyStopping
 
-url = "https://storage.googleapis.com/safetymap/preprocessed_data3.csv"
+url = "https://storage.googleapis.com/safety-map-model/preprocessed_data.csv"
 
 def get_data(url):
   df = pd.read_csv(url)
-  df.drop(columns = "colonia_id", inplace = True)
-  pre_data = df.set_index(["year_month_hecho","alcaldia_colonia"]).unstack("alcaldia_colonia")
-
+  df.drop(columns = "Neighborhood_ID", inplace = True)
+  pre_data = df.set_index(["year_month","Neighborhood"]).unstack("Neighborhood")
   return df,pre_data
 
 ############
@@ -63,9 +63,9 @@ def train_test_split(fold:pd.DataFrame,
 ##########################
 SEQUENCE_STRIDE = 1
 OUTPUT_LENGTH = 12
-TARGET = ['burglary', 'danger_of_well-being',
-       'domestic_violence', 'fraud', 'homicide', 'property_damage',
-       'robbery_with_violence', 'robbery_without_violence', 'sexual_crime',
+TARGET = ['burglary', 'danger of well-being',
+       'domestic violence', 'fraud', 'homicide', 'property damage',
+       'robbery with violence', 'robbery without violence', 'sexual crime',
        'threats']
 ##########################
 
@@ -92,19 +92,17 @@ def get_X_y_strides(fold: pd.DataFrame, input_length: int, output_length: int,
         X_i_transformed = fold.iloc[i:i + input_length, :]
         y_i_transformed = fold.iloc[i + input_length:i + input_length + output_length, :][TARGET]
 
-        fold_train_list = X_i_transformed.stack("alcaldia_colonia").groupby(["alcaldia_colonia", "year_month_hecho"])\
+        fold_train_list = X_i_transformed.stack("Neighborhood").groupby(["Neighborhood", "year_month"])\
                             .apply(lambda x: x.values.tolist()[0])\
-                            .groupby("alcaldia_colonia").apply(lambda x: x.values.tolist())\
+                            .groupby("Neighborhood").apply(lambda x: x.values.tolist())\
                             .tolist()
 
-        fold_test_list = y_i_transformed.stack("alcaldia_colonia").groupby(["alcaldia_colonia", "year_month_hecho"])\
+        fold_test_list = y_i_transformed.stack("Neighborhood").groupby(["Neighborhood", "year_month"])\
                             .apply(lambda x: x.values.tolist()[0])\
-                            .groupby("alcaldia_colonia").apply(lambda x: x.values.tolist())\
+                            .groupby("Neighborhood").apply(lambda x: x.values.tolist())\
                             .tolist()
 
     return (np.array(fold_train_list), np.array(fold_test_list))
-
-
 
 def init_model(X_train, y_train):
     model = Sequential()
@@ -124,67 +122,39 @@ def init_model(X_train, y_train):
     return model
 
 
-def make_the_dataframe(predictions):
-# Date Series for the prediction dataframe
-    start_date = '2023-01-01'
-    num_periods = 12
-    date_range = pd.date_range(start=start_date, periods=num_periods, freq='MS')
-    date_series = pd.Series(range(num_periods), index=date_range)
+if __name__== "__main__":
+    #Get Fold_train  and Fold_test
+    (df, pre_data) = get_data(url)
+    nom_delitos = df.columns[2:].tolist()
+    nom_colonias = df.Neighborhood.unique().tolist()
 
-    # Empty list to save the list of dataframes
-    p1 = []
-    nom_delitos = df.columns[2:]
-    nom_colonias = df.alcaldia_colonia.unique()
+    nom_delitos_colonias = {"delitos": nom_delitos, "colonias" : nom_colonias}
+    with open("raw_data/tempfiles/nom_delitos_colonias.json", "w") as jsonfile:
+        json.dump(nom_delitos_colonias, jsonfile)
 
-    for period in range(predictions.shape[1]):
-        p1.append(pd.DataFrame(predictions[:, period, :], columns =nom_delitos, index = nom_colonias).assign(periodo= date_series.index[period].date()))
+    (fold_train, fold_test) = train_test_split(pre_data, TRAIN_TEST_RATIO, INPUT_LENGTH)
+    fold_test.to_pickle("raw_data/fold_test.pkl")
 
-    new_prediction = pd.concat(p1)
-    prediction_dataframe = new_prediction.set_index("periodo",append=True).round(0).astype(int)
+    # Running the Train function for X and y
+    X_train, y_train = get_X_y_strides(fold_train, INPUT_LENGTH, OUTPUT_LENGTH, SEQUENCE_STRIDE)
+    # Running the Test functeion for X and y
+    X_test, y_test = get_X_y_strides(fold_test, INPUT_LENGTH, OUTPUT_LENGTH, SEQUENCE_STRIDE)
 
-    return prediction_dataframe
+    #initiate model
+    model = init_model(X_train, y_train)
 
+    # Early Stopping with patience 10
+    es = EarlyStopping(patience=10)
 
-#Get Fold_train  and Fold_test
+    # Fiting Model
+    model.fit(X_train, y_train,
+            epochs=200,
+            batch_size=32,
+            verbose=1,
+            callbacks = [es],
+            validation_split=0.2)
 
-(df, pre_data) = get_data(url)
+    print("Yaaay! Your Model Seems to Work!")
 
-(fold_train, fold_test) = train_test_split(pre_data, TRAIN_TEST_RATIO, INPUT_LENGTH)
-
-# Running the Train function for X and y
-X_train, y_train = get_X_y_strides(fold_train, INPUT_LENGTH, OUTPUT_LENGTH, SEQUENCE_STRIDE)
-
-# Running the Test functeion for X and y
-X_test, y_test = get_X_y_strides(fold_test, INPUT_LENGTH, OUTPUT_LENGTH, SEQUENCE_STRIDE)
-
-#initiate model
-model = init_model(X_train, y_train)
-
-# Early Stopping with patience 10
-es = EarlyStopping(patience=10)
-
-# Fiting Model
-model.fit(X_train, y_train,
-          epochs=200,
-          batch_size=32,
-          verbose=1,
-          callbacks = [es],
-          validation_split=0.2)
-
-print("Yaaay! Your Model Seems to Work!")
-
-# Let us get the predictions!
-predictions = model.predict(X_test)
-
-prediction_dataframe = make_the_dataframe(predictions)
-
-load_data_to_bq(prediction_dataframe,
-                GCP_PROJECT,
-                BQ_DATASET,
-                BQ_DATASET_PREDICTION,
-                truncate= True
-)
-print("We are Ready!, try with these predictions")
-
-# Save the model
-save_model(model)
+    #saving the model to the cloud
+    save_model(model)
