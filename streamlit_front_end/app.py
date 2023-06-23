@@ -84,6 +84,8 @@ query = f"""
     WHERE {where_clause}
 """
 
+st.write(query)
+
 # Set query parameters with converted values
 query_parameters = [bigquery.ScalarQueryParameter(f"value{i}", "STRING", str(value)) for i, value in enumerate(selected_values.values())]
 
@@ -91,15 +93,30 @@ query_parameters = [bigquery.ScalarQueryParameter(f"value{i}", "STRING", str(val
 job_config = bigquery.QueryJobConfig()
 job_config.query_parameters = query_parameters
 query_job = client.query(query, job_config=job_config)
+
+
 dataframe = query_job.to_dataframe()
 
+dataframe_shape = dataframe.shape
+
+st.write(dataframe.shape)
+st.write(dataframe_shape[0])
+
 # Create a Folium map
-map_center = [dataframe['latitud'].iloc[0], dataframe['longitud'].iloc[0]]
-m = folium.Map(location=map_center, zoom_start=10)
+if dataframe_shape[0] > 0:
+    map_center = [dataframe['latitud'].iloc[0], dataframe['longitud'].iloc[0]]
+else:
+    map_center = [19.4326, -99.1332]  # Default center if no data is available
+
+map = folium.Map(location=map_center, zoom_start=11, tiles='Stamen Toner')
 
 # Add markers to the map
-for _, row in dataframe.iterrows():
-    folium.Marker([row['latitud'], row['longitud']]).add_to(map)
+if dataframe_shape[0] > 0:
+    for _, row in dataframe.iterrows():
+        folium.Marker([row['latitud'], row['longitud']]).add_to(map)
+else:
+    #folium.Marker(map_center[::-1], popup='No crime was committed.').add_to(map)
+    st.markdown(""" # NO CRIME WAS COMMITED """)
 
 # Display the map
-st_folium = st_folium(map, width = 700)
+st_folium(map, width=700)
