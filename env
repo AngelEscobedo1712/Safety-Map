@@ -1,0 +1,32 @@
+
+# GCP project for Safety Map Project
+GCP_PROJECT=wagon-bootcamp-385417
+GCP_REGION=us-west2
+
+# Cloud Storage
+BUCKET_NAME=safety-map-model
+
+# BigQuery
+BQ_REGION=US
+BQ_DATASET=taxifare
+
+# Compute Engine
+INSTANCE=taxi-instance
+
+# Model Lifecycle
+MLFLOW_TRACKING_URI=http://127.0.0.1:5000/
+MLFLOW_EXPERIMENT=taxifare_experiment_theodhz
+MLFLOW_MODEL_NAME=taxifare_theodhz_all
+
+PREFECT_FLOW_NAME=taxifare_lifecycle_theodhz
+PREFECT_LOG_LEVEL=WARNING
+
+# API on Gcloud Run
+GCR_IMAGE=taxifare
+
+# Docker
+DOCKER_IMAGE_NAME="safety-map-api"
+GCR_REGION=us-west2
+GCR_MULTI_REGION="us.gcr.io"
+
+GOOGLE_APPLICATION_CREDENTIALS=wagon-bootcamp-385417-bfee5f083d98.json
