@@ -9,7 +9,7 @@ from tensorflow import keras
 from google.cloud import storage
 from google.cloud import bigquery
 
-from params import LOCAL_REGISTRY_PATH, BUCKET_NAME
+from api.params import LOCAL_REGISTRY_PATH, BUCKET_NAME
 
 def save_model(model: keras.Model = None) -> None:
     """

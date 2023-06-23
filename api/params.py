@@ -1,5 +1,8 @@
 import os
 import numpy as np
+from dotenv import load_dotenv
+load_dotenv()
+
 
 ## VARIABLES
 GCP_PROJECT = os.environ.get("GCP_PROJECT")
