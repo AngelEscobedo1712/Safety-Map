@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 
 
-
 url = "https://archivo.datos.cdmx.gob.mx/fiscalia-general-de-justicia/victimas-en-carpetas-de-investigacion-fgj/da_victimas_completa_marzo_2023.csv"
 data_cdmx = pd.read_csv(url)
+
 
 #sort out delicts that happened outside of cdmx
 boolean_mask = data_cdmx['municipio_hechos'].isnull()
@@ -18,7 +18,8 @@ data = data[boolean_mask].reset_index(drop=True)
 columns_to_drop = ['idCarpeta', 'Año_inicio', 'Mes_inicio', 'FechaInicio',
                    'CalidadJuridica', 'HoraInicio',
                   'fgj_colonia_registro', 'municipio_hechos',
-                  'TipoPersona', 'competencia']
+                  'TipoPersona', 'competencia','HoraHecho'
+                  ]
 
 data = data.drop(columns_to_drop, axis=1)
 
@@ -66,7 +67,25 @@ data_new_cats = data_new_cats[boolean_mask].reset_index(drop=True)
 data_new_cats.drop(columns=['Categoria', 'Delito'], axis=1, inplace=True)
 
 
-data_new_cats.rename(columns={"new_cats": "Categoria"},inplace=True)
+data_new_cats.rename(columns={"new_cats": "Category",
+                              "Año_hecho": "Year",
+                              "Sexo": "Sex",
+                              "Edad": "Age",
+                              "Mes_hecho": "Month",
+                              "latitud": "Latitude",
+                              "longitud": "Longitude",
+                              "FechaHecho": "Date"
+                              },inplace=True)
+
+data_new_cats['Neighborhood'] = data_new_cats['alcaldia_hechos'].str.cat(data_new_cats['colonia_datos'], sep=' || ')
+
+data_new_cats.drop(columns=['alcaldia_hechos', 'colonia_datos'], axis=1, inplace=True)
+
+data_new_cats['Year'] = data_new_cats['Year'].astype(int)
+
+clean_data = data_new_cats
+
+clean_data.to_csv('/Users/pieterdietrich/code/AngelEscobedo1712/Safety-Map/Clean and Preprocessed Data/clean_data.csv', index=False)
+
 
 print('finish')
-print(data_new_cats)
