@@ -9,4 +9,8 @@ URL = https://storage.googleapis.com/safetymap/data_new_cats.csv
 URL = https://storage.googleapis.com/safetymap/colonia_id_dict.json
 
 # Preprocessed data, stored in a public available GCP bucket
-URL = https://storage.googleapis.com/safetymap/preprocessed_data3.csv
+URL = https://storage.googleapis.com/safety_map_bucket/preprocessed_data3.csv
+
+# Average coordinates of neighborhoods
+
+URL = https://storage.googleapis.com/safety-map-model/coords_colonias.csv
