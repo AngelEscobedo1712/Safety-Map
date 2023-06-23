@@ -1,18 +1,19 @@
 import streamlit as st
-import datetime
-import requests
 import folium
 from google.cloud import bigquery
 from streamlit_folium import st_folium
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 # Create a BigQuery client
 client = bigquery.Client()
 
 # Define BigQuery project ID, dataset ID, and table ID
-project_id = "lucky-rookery-385417"
-dataset_id = "safety_map_new"
-table_id = "map_data"
-column_name = "alcaldia_colonia"
+project_id = os.getenv("GCP_PROJECT")
+dataset_id = os.getenv("BQ_DATASET")
+table_id = os.getenv("TABLE_ID")
 
 # Construct the BigQuery table reference
 table_ref = client.dataset(dataset_id).table(table_id)
@@ -41,19 +42,19 @@ st.title("Historical crime data")
 map = folium.Map(location=[19.4326, -99.1332], zoom_start=11, tiles='Stamen Toner')
 
 ##select colonia (names queried from Big Query)
-query = f"SELECT DISTINCT {column_name} FROM `{project_id}.{dataset_id}.{table_id}`"
+query = f"SELECT DISTINCT Neighborhood FROM `{project_id}.{dataset_id}.{table_id}`"
 # Execute the query and fetch the results
 query_job = client.query(query)
 rows = query_job.result()
 # Extract the column values into a Python list
-colonias = [row[column_name] for row in rows]
+colonias = [row['Neighborhood'] for row in rows]
 
 ###add drop downs
 dropdown_values = {
-    'year_column': ['ALL', 2019, 2020, 2021, 2022, 2023],  # Add 'ALL' as the first option
-    'month_column': ['ALL'] + list(range(1, 13)),  # Add 'ALL' as the first option
-    'alcaldia_colonia': ['ALL'] + colonias,  # Add 'ALL' as the first option
-    'Categoria': ['ALL', 'fraud', 'threats', 'threats', 'burglary', 'homicide',
+    'Neighborhood': colonias,
+    'Year': ['ALL', 2019, 2020, 2021, 2022, 2023],
+    'Month': ['ALL'] + list(range(1, 13)),
+    'Category': ['ALL', 'fraud', 'threats', 'threats', 'burglary', 'homicide',
                   'sexual crime', 'property damage', 'domestic violence', 'danger of well-being',
                   'robbery with violence', 'robbery without violence']
 }
@@ -79,12 +80,11 @@ else:
 
 # Prepare the query
 query = f"""
-    SELECT latitud, longitud
+    SELECT Latitude, Longitude
     FROM `{dataset_id}.{table_id}`
     WHERE {where_clause}
 """
 
-st.write(query)
 
 # Run the query
 query_job = client.query(query)
@@ -92,12 +92,9 @@ dataframe = query_job.to_dataframe()
 
 dataframe_shape = dataframe.shape
 
-st.write(dataframe.shape)
-st.write(dataframe_shape[0])
-
 # Create a Folium map
 if dataframe_shape[0] > 0:
-    map_center = [dataframe['latitud'].iloc[0], dataframe['longitud'].iloc[0]]
+    map_center = [dataframe['Latitude'].iloc[0], dataframe['Longitude'].iloc[0]]
 else:
     map_center = [19.4326, -99.1332]  # Default center if no data is available
 
@@ -106,9 +103,9 @@ map = folium.Map(location=map_center, zoom_start=11, tiles='Stamen Toner')
 # Add markers to the map
 if dataframe_shape[0] > 0:
     for _, row in dataframe.iterrows():
-        folium.Marker([row['latitud'], row['longitud']]).add_to(map)
+        folium.Marker([row['Latitude'], row['Longitude']]).add_to(map)
 else:
-    st.markdown(""" ##NO CRIME WAS COMMITTED """)
+    st.markdown(""" ## NO CRIME WAS COMMITTED """)
 
 # Display the map
 st_folium(map, width=700)
